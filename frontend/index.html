@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Briefed — Your AI News Digest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f0e0d;
+    --paper: #f5f0e8;
+    --cream: #ede8dd;
+    --accent: #c8372d;
+    --muted: #7a7268;
+    --border: #d4cec4;
+    --card-bg: #faf7f2;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    border-bottom: 3px double var(--ink);
+    padding: 0 2rem;
+    position: sticky;
+    top: 0;
+    background: var(--paper);
+    z-index: 100;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 0 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .date-line {
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .masthead {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.8rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .masthead span { color: var(--accent); }
+
+  .header-actions {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .btn {
+    padding: 0.4rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border: 1.5px solid var(--ink);
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .btn:hover { background: var(--ink); color: var(--paper); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+  .btn.primary:hover { background: #a52d24; border-color: #a52d24; }
+
+  .nav-bar {
+    display: flex;
+    gap: 0;
+    padding: 0.4rem 0;
+    overflow-x: auto;
+  }
+
+  .topic-pill {
+    padding: 0.25rem 0.9rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    white-space: nowrap;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .topic-pill.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* MAIN LAYOUT */
+  .layout {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 3rem;
+  }
+
+  /* DIGEST SECTION */
+  .section-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .digest-box {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    position: relative;
+    min-height: 120px;
+  }
+
+  .digest-box::before {
+    content: '"';
+    font-family: 'Playfair Display', serif;
+    font-size: 6rem;
+    color: var(--accent);
+    opacity: 0.12;
+    position: absolute;
+    top: -1rem;
+    left: 1rem;
+    line-height: 1;
+  }
+
+  .digest-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    line-height: 1.75;
+    color: var(--ink);
+    white-space: pre-wrap;
+    position: relative;
+    z-index: 1;
+  }
+
+  .digest-text strong, .digest-text b {
+    font-weight: 700;
+  }
+
+  .digest-meta {
+    margin-top: 1rem;
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .generate-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 2rem;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 2rem;
+  }
+
+  .generate-btn:hover { background: var(--accent); }
+  .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .generate-btn .spinner { animation: spin 1s linear infinite; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ARTICLES GRID */
+  .articles-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+
+  .article-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    transition: transform 0.15s, box-shadow 0.15s;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .article-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+
+  .article-card.featured {
+    grid-column: 1 / -1;
+  }
+
+  .article-img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    display: block;
+    background: var(--cream);
+  }
+
+  .article-card.featured .article-img { height: 220px; }
+
+  .article-body {
+    padding: 1rem;
+  }
+
+  .article-topic {
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: var(--accent);
+    margin-bottom: 0.4rem;
+  }
+
+  .article-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 0.5rem;
+    color: var(--ink);
+  }
+
+  .article-card.featured .article-title { font-size: 1.35rem; }
+
+  .article-desc {
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .article-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .article-source {
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+
+  .bookmark-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0;
+    opacity: 0.4;
+    transition: opacity 0.15s, transform 0.15s;
+    color: var(--accent);
+  }
+
+  .bookmark-btn:hover, .bookmark-btn.active { opacity: 1; }
+  .bookmark-btn.active { transform: scale(1.2); }
+
+  /* SIDEBAR */
+  aside { border-left: 1px solid var(--border); padding-left: 2rem; }
+
+  .sidebar-section { margin-bottom: 2rem; }
+
+  /* TOPIC PREFERENCES */
+  .topics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+
+  .topic-toggle {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+    border: 1.5px solid var(--border);
+    background: var(--card-bg);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+    text-align: center;
+  }
+
+  .topic-toggle.selected {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: #fdf0ef;
+  }
+
+  .save-prefs-btn {
+    width: 100%;
+    margin-top: 0.75rem;
+    padding: 0.6rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+    border: 1.5px solid var(--ink);
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .save-prefs-btn:hover { background: var(--ink); color: var(--paper); }
+
+  /* HISTORY */
+  .history-item {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: color 0.1s;
+  }
+
+  .history-item:hover { color: var(--accent); }
+
+  .history-date {
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    margin-bottom: 0.3rem;
+  }
+
+  .history-preview {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* BOOKMARKS PANEL */
+  .bookmark-item {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+
+  .bookmark-item-img {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: var(--cream);
+  }
+
+  .bookmark-item-title {
+    font-size: 0.78rem;
+    font-weight: 500;
+    line-height: 1.35;
+    color: var(--ink);
+  }
+
+  .bookmark-item-title a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .bookmark-item-title a:hover { color: var(--accent); }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1rem;
+  }
+
+  .tab {
+    padding: 0.4rem 1rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+  }
+
+  .tab.active { color: var(--ink); border-bottom-color: var(--ink); }
+
+  /* EMPTY STATE */
+  .empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--muted);
+  }
+
+  .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+  .empty-text { font-size: 0.85rem; line-height: 1.6; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0.75rem 1.25rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(0.5rem);
+    transition: all 0.25s;
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* LOADING SKELETON */
+  .skeleton {
+    background: linear-gradient(90deg, var(--cream) 25%, var(--border) 50%, var(--cream) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 2px;
+  }
+
+  @keyframes shimmer { to { background-position: -200% 0; } }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    aside { border-left: none; border-top: 1px solid var(--border); padding-left: 0; padding-top: 2rem; }
+    .articles-grid { grid-template-columns: 1fr; }
+    .article-card.featured { grid-column: 1; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <span class="date-line" id="date-display"></span>
+    <div class="masthead">Briefed<span>.</span></div>
+    <div class="header-actions">
+      <button class="btn" onclick="showTab('bookmarks-tab')">📑 Saved</button>
+      <button class="btn" onclick="showTab('history-tab')">🕒 History</button>
+    </div>
+  </div>
+  <div class="nav-bar" id="topic-nav"></div>
+</header>
+
+<div class="layout">
+  <!-- MAIN CONTENT -->
+  <main>
+    <!-- DIGEST -->
+    <div class="section-label">Today's AI Digest</div>
+
+    <button class="generate-btn" id="gen-btn" onclick="generateDigest()">
+      <svg id="gen-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      Generate Today's Digest
+    </button>
+
+    <div class="digest-box" id="digest-box">
+      <div class="digest-text" id="digest-text" style="color:var(--muted);font-style:italic;font-family:'DM Sans',sans-serif;font-size:0.9rem">
+        Click "Generate Today's Digest" to get your personalized AI-written news summary based on your selected topics.
+      </div>
+    </div>
+
+    <!-- ARTICLES -->
+    <div class="section-label">Latest Articles</div>
+    <div class="articles-grid" id="articles-grid">
+      <div class="empty">
+        <div class="empty-icon">📰</div>
+        <div class="empty-text">Your articles will appear here.<br>Select topics in the sidebar and generate your digest.</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- SIDEBAR -->
+  <aside>
+    <div class="tabs">
+      <button class="tab active" id="tab-prefs" onclick="switchSideTab('prefs')">Topics</button>
+      <button class="tab" id="tab-history" onclick="switchSideTab('history')">History</button>
+      <button class="tab" id="tab-bookmarks" onclick="switchSideTab('bookmarks')">Saved</button>
+    </div>
+
+    <!-- PREFERENCES -->
+    <div id="panel-prefs">
+      <div class="section-label">Your Topics</div>
+      <div class="topics-grid" id="topics-grid"></div>
+      <button class="save-prefs-btn" onclick="savePreferences()">Save & Refresh</button>
+    </div>
+
+    <!-- HISTORY -->
+    <div id="panel-history" style="display:none">
+      <div class="section-label">Past Digests</div>
+      <div id="history-list"></div>
+    </div>
+
+    <!-- BOOKMARKS -->
+    <div id="panel-bookmarks" style="display:none">
+      <div class="section-label">Saved Articles</div>
+      <div id="bookmarks-list"></div>
+    </div>
+  </aside>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:8000'
+  : '/api';
+
+// Session ID - persisted in localStorage
+let SESSION_ID = localStorage.getItem('briefed_session');
+if (!SESSION_ID) {
+  SESSION_ID = 'user_' + Math.random().toString(36).slice(2, 10);
+  localStorage.setItem('briefed_session', SESSION_ID);
+}
+
+const ALL_TOPICS = ['technology','science','business','health','sports','entertainment'];
+const TOPIC_ICONS = {
+  technology:'💻', science:'🔬', business:'💼',
+  health:'🏥', sports:'⚽', entertainment:'🎬'
+};
+
+let selectedTopics = [];
+let bookmarkedIds = new Set();
+let articles = [];
+
+// INIT
+window.onload = async () => {
+  document.getElementById('date-display').textContent =
+    new Date().toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+
+  renderTopicNav();
+  await loadPreferences();
+  renderTopicsGrid();
+  loadHistory();
+  loadBookmarks();
+  loadArticles();
+};
+
+function renderTopicNav() {
+  const nav = document.getElementById('topic-nav');
+  nav.innerHTML = ALL_TOPICS.map(t =>
+    `<button class="topic-pill" onclick="filterByTopic('${t}')">${TOPIC_ICONS[t]} ${t}</button>`
+  ).join('');
+}
+
+async function loadPreferences() {
+  try {
+    const r = await fetch(`${API}/api/preferences/${SESSION_ID}`);
+    const data = await r.json();
+    selectedTopics = data.topics || ['technology','science'];
+  } catch {
+    selectedTopics = ['technology','science'];
+  }
+}
+
+function renderTopicsGrid() {
+  document.getElementById('topics-grid').innerHTML = ALL_TOPICS.map(t =>
+    `<button class="topic-toggle ${selectedTopics.includes(t)?'selected':''}"
+      onclick="toggleTopic('${t}',this)">
+      ${TOPIC_ICONS[t]} ${t}
+    </button>`
+  ).join('');
+}
+
+function toggleTopic(topic, el) {
+  if (selectedTopics.includes(topic)) {
+    selectedTopics = selectedTopics.filter(t => t !== topic);
+    el.classList.remove('selected');
+  } else {
+    selectedTopics.push(topic);
+    el.classList.add('selected');
+  }
+}
+
+async function savePreferences() {
+  if (selectedTopics.length === 0) { toast('Select at least one topic'); return; }
+  await fetch(`${API}/api/preferences/`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({session_id: SESSION_ID, topics: selectedTopics})
+  });
+  toast('Preferences saved!');
+  loadArticles();
+}
+
+async function generateDigest() {
+  const btn = document.getElementById('gen-btn');
+  const icon = document.getElementById('gen-icon');
+  const box = document.getElementById('digest-text');
+
+  btn.disabled = true;
+  icon.classList.add('spinner');
+  icon.setAttribute('d','M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83');
+  box.textContent = 'Generating your personalized digest…';
+  box.style.color = 'var(--muted)';
+  box.style.fontFamily = "'DM Sans', sans-serif";
+  box.style.fontStyle = 'italic';
+
+  try {
+    const r = await fetch(`${API}/api/news/digest?session_id=${SESSION_ID}`);
+    const data = await r.json();
+
+    box.textContent = data.summary;
+    box.style.color = 'var(--ink)';
+    box.style.fontFamily = "'Playfair Display', serif";
+    box.style.fontStyle = 'normal';
+
+    // Auto-save digest
+    const prefs = await (await fetch(`${API}/api/preferences/${SESSION_ID}`)).json();
+    await fetch(`${API}/api/digests/`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        session_id: SESSION_ID,
+        topics: prefs.topics,
+        summary: data.summary,
+        article_ids: []
+      })
+    });
+
+    document.getElementById('digest-box').querySelector('.digest-meta')?.remove();
+    const meta = document.createElement('div');
+    meta.className = 'digest-meta';
+    meta.innerHTML = `<span>Generated ${new Date().toLocaleTimeString()}</span><span>${data.article_count} articles analyzed</span>`;
+    document.getElementById('digest-box').appendChild(meta);
+
+    loadHistory();
+  } catch(e) {
+    box.textContent = 'Could not generate digest. Is the backend running?';
+    box.style.color = 'var(--accent)';
+  }
+
+  btn.disabled = false;
+  icon.classList.remove('spinner');
+}
+
+async function loadArticles() {
+  const grid = document.getElementById('articles-grid');
+  grid.innerHTML = `<div class="article-card" style="grid-column:1/-1;padding:1.5rem">
+    <div class="skeleton" style="height:20px;width:60%;margin-bottom:0.5rem"></div>
+    <div class="skeleton" style="height:14px;width:90%"></div>
+  </div>`;
+
+  try {
+    const r = await fetch(`${API}/api/news/articles?session_id=${SESSION_ID}`);
+    articles = await r.json();
+    renderArticles(articles);
+  } catch {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
+      <div class="empty-icon">⚠️</div>
+      <div class="empty-text">Could not load articles.<br>Check backend connection.</div>
+    </div>`;
+  }
+}
+
+function renderArticles(arts) {
+  const grid = document.getElementById('articles-grid');
+  if (!arts.length) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
+      <div class="empty-icon">📰</div>
+      <div class="empty-text">No articles found.<br>Save your topic preferences and try again.</div>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = arts.map((a, i) => `
+    <div class="article-card ${i===0?'featured':''}" onclick="openArticle('${a.url}')">
+      ${a.url_to_image ? `<img class="article-img" src="${a.url_to_image}" alt="" onerror="this.style.display='none'">` : ''}
+      <div class="article-body">
+        <div class="article-topic">${TOPIC_ICONS[a.topic]||'📌'} ${a.topic||'News'}</div>
+        <div class="article-title">${escHtml(a.title)}</div>
+        ${a.description ? `<div class="article-desc">${escHtml(a.description)}</div>` : ''}
+        <div class="article-footer">
+          <span class="article-source">${a.source_name||'Unknown'}</span>
+          <button class="bookmark-btn ${bookmarkedIds.has(a.id)?'active':''}"
+            onclick="event.stopPropagation();toggleBookmark('${a.id}',this)"
+            title="Save article">
+            ${bookmarkedIds.has(a.id) ? '🔖' : '🔖'}
+          </button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterByTopic(topic) {
+  document.querySelectorAll('.topic-pill').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  const filtered = topic ? articles.filter(a => a.topic === topic) : articles;
+  renderArticles(filtered);
+}
+
+function openArticle(url) { window.open(url, '_blank'); }
+
+async function toggleBookmark(articleId, btn) {
+  if (bookmarkedIds.has(articleId)) {
+    await fetch(`${API}/api/bookmarks/${SESSION_ID}/${articleId}`, {method:'DELETE'});
+    bookmarkedIds.delete(articleId);
+    btn.classList.remove('active');
+    toast('Removed from saved');
+  } else {
+    await fetch(`${API}/api/bookmarks/`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({session_id: SESSION_ID, article_id: articleId})
+    });
+    bookmarkedIds.add(articleId);
+    btn.classList.add('active');
+    toast('Article saved!');
+  }
+  loadBookmarks();
+}
+
+async function loadHistory() {
+  try {
+    const r = await fetch(`${API}/api/digests/${SESSION_ID}`);
+    const digests = await r.json();
+    const list = document.getElementById('history-list');
+    if (!digests.length) {
+      list.innerHTML = `<div class="empty"><div class="empty-icon">🕒</div><div class="empty-text">No past digests yet.</div></div>`;
+      return;
+    }
+    list.innerHTML = digests.map(d => `
+      <div class="history-item" onclick="showDigest(${JSON.stringify(d.summary).replace(/"/g,'&quot;')})">
+        <div class="history-date">${new Date(d.created_at).toLocaleString()} · ${d.topics.join(', ')}</div>
+        <div class="history-preview">${d.summary.slice(0,100)}…</div>
+      </div>
+    `).join('');
+  } catch {}
+}
+
+function showDigest(summary) {
+  const box = document.getElementById('digest-text');
+  box.textContent = summary;
+  box.style.color = 'var(--ink)';
+  box.style.fontFamily = "'Playfair Display', serif";
+  box.style.fontStyle = 'normal';
+  switchSideTab('prefs');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function loadBookmarks() {
+  try {
+    const r = await fetch(`${API}/api/bookmarks/${SESSION_ID}`);
+    const bms = await r.json();
+    bookmarkedIds = new Set(bms.map(b => b.article_id));
+
+    const list = document.getElementById('bookmarks-list');
+    if (!bms.length) {
+      list.innerHTML = `<div class="empty"><div class="empty-icon">📑</div><div class="empty-text">No saved articles yet.<br>Click 🔖 on any article.</div></div>`;
+      return;
+    }
+    list.innerHTML = bms.map(b => `
+      <div class="bookmark-item">
+        ${b.article?.url_to_image ? `<img class="bookmark-item-img" src="${b.article.url_to_image}" onerror="this.style.display='none'">` : ''}
+        <div>
+          <div class="bookmark-item-title">
+            <a href="${b.article?.url||'#'}" target="_blank">${escHtml(b.article?.title||'Article')}</a>
+          </div>
+          <div style="font-size:0.65rem;color:var(--muted);margin-top:0.2rem">${b.article?.source_name||''}</div>
+        </div>
+      </div>
+    `).join('');
+  } catch {}
+}
+
+function switchSideTab(tab) {
+  ['prefs','history','bookmarks'].forEach(t => {
+    document.getElementById(`panel-${t}`).style.display = t===tab ? '' : 'none';
+    document.getElementById(`tab-${t}`).classList.toggle('active', t===tab);
+  });
+  if (tab === 'history') loadHistory();
+  if (tab === 'bookmarks') loadBookmarks();
+}
+
+function showTab(which) {
+  if (which === 'bookmarks-tab') switchSideTab('bookmarks');
+  if (which === 'history-tab') switchSideTab('history');
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function escHtml(str) {
+  return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
