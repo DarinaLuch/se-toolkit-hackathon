@@ -22,22 +22,17 @@
 - Browse individual articles grouped by topic
 - Bookmark articles to read later
 - Digest history — browse past digests
-- Works with mock data (no NewsAPI key needed to try it)
-- LLM-powered via Qwen proxy (OpenAI-compatible) or Anthropic/OpenAI keys
-
-### Not yet implemented 🔜
-- "Explain this like I'm 5" mode per article
-- Email/scheduled delivery
-- Bias detector
-- User accounts (currently uses browser session ID)
-
+- Works with NewsAPI
+- LLM-powered via Qwen proxy
+  
 ## Usage
 
 1. Open the app at `http://your-vm-ip:3000`
-2. In the sidebar, select the topics you care about and click **Save & Refresh**
-3. Click **Generate Today's Digest** — the AI will summarize today's top articles
-4. Browse articles below, click 🔖 to save any you want to read later
-5. Click **History** to revisit past digests
+2. In the sidebar, select the topics you care about and click **Find News**
+3. You can read the latest news on selected topics, click 🔖 to save any you want to read later
+5. Click **Generate Today's Digest** — the AI will summarize today's top articles
+6. Click **History** to revisit past digests
+7. Click **Saved** to read saved news
 
 ## Deployment
 
@@ -45,7 +40,7 @@
 - Ubuntu 24.04
 - Docker and Docker Compose installed
 - A NewsAPI key (free at https://newsapi.org)
-- Qwen proxy running on port 42005 (from Lab 7/8 setup), OR an Anthropic/OpenAI API key
+- Qwen proxy running on port 42005, OR an Anthropic/OpenAI API key
 
 ### Step-by-step
 
