@@ -34,60 +34,95 @@
 6. Click **History** to revisit past digests
 7. Click **Saved** to read saved news
 
-## Deployment
 
-### Requirements
-- Ubuntu 24.04
-- Docker and Docker Compose installed
-- A NewsAPI key (free at https://newsapi.org)
-- Qwen proxy running on port 42005, OR an Anthropic/OpenAI API key
+## Deployment Instructions
 
-### Step-by-step
+### Prerequisites
+- OS: Ubuntu 22.04 / 24.04
+- Tools: Docker Engine & Docker Compose plugin, `git`, `curl`
+- Network: Public IP address for the VM
+- Firewall: Inbound traffic allowed on port `3000` (Frontend) and `8000` (Backend API)
 
+### 1. Clone the Repository
 ```bash
-# 1. Clone the repo
-git clone https://github.com/DarinaLuch/se-toolkit-hackathon
+git clone https://github.com/DarinaLuch/se-toolkit-hackathon.git
 cd se-toolkit-hackathon
+```
 
-# 2. Create your env file (copy from example)
-# .env.secret is NOT committed to git — fill in your real keys there
+### 2. Configure Environment Variables
+
+Create a local secret file. Never commit this to git.
+```bash
 cp .env.example .env.secret
-
-# 3. Fill in your keys
 nano .env.secret
-# Set NEWS_API_KEY, LLM_API_KEY, etc.
-
-# 4. Build and start
-docker compose --env-file .env.secret up --build -d
-
-# 5. Open in browser
-# http://your-vm-ip:3000
 ```
 
-### Environment variables
-
-| Variable | Description | Default |
+| Variable | Description | Fallback Behavior |
 |---|---|---|
-| `NEWS_API_KEY` | From newsapi.org (free) | *(uses mock data if empty)* |
-| `LLM_PROVIDER` | `anthropic`, `openai`, or `qwen` | `anthropic` |
-| `LLM_API_KEY` | Your API key | *(uses template digest if empty)* |
-| `LLM_BASE_URL` | For Qwen proxy: `http://host.docker.internal:42005/v1` | |
-| `LLM_MODEL` | Model name | `claude-sonnet-4-20250514` |
+| `NEWS_API_KEY` | Key from NewsAPI.org | If empty, app serves built-in mock articles |
+| `LLM_PROVIDER` | `qwen`, `anthropic`, or `openai` | Defaults to `qwen` |
+| `LLM_API_KEY` | Your LLM proxy/API key | If empty, app uses a readable template summary |
+| `LLM_BASE_URL` | Proxy URL (e.g. `http://host.docker.internal:42005/v1`) | Falls back to `https://api.openai.com/v1` if `qwen`/`openai` selected |
+| `LLM_MODEL` | Model name (e.g. `coder-model`) | Defaults to `gpt-4o-mini` for OpenAI |
 
-### Qwen proxy setup (from labs)
+### 3. Configure Docker DNS (VM Network Fix)
 
+University/corporate networks often block external DNS resolution inside containers. Fix this by adding public DNS resolvers:
 ```bash
-# In .env.secret:
-LLM_PROVIDER=qwen
-LLM_API_KEY=my-secret-qwen-key
-LLM_BASE_URL=http://host.docker.internal:42005/v1
-LLM_MODEL=coder-model
+echo '{"dns": ["8.8.8.8", "8.8.4.4", "1.1.1.1"]}' | sudo tee /etc/docker/daemon.json
+sudo systemctl restart docker
 ```
 
-### Verify it's running
-
+### 4. Build & Start Services
 ```bash
-docker compose --env-file .env.secret ps
+docker compose --env-file .env.secret up --build -d
+```
+
+This command:
+1. Builds backend & frontend images
+2. Starts PostgreSQL with a health check
+3. Waits for the database to be `healthy`
+4. Launches backend (FastAPI) and frontend (Nginx)
+
+### 5. Verify Deployment
+
+Check container status (all should show `healthy` or `up`):
+```bash
+docker compose ps
+```
+
+Test backend health endpoint:
+```bash
 curl http://localhost:8000/health
 # → {"status":"ok"}
 ```
+
+Test frontend proxy & API routing:
+```bash
+curl -s http://localhost:3000/api/news/articles?session_id=test | head -c 200
+# → JSON array of articles (real or mock)
+```
+
+### 6. Access the Application
+
+Open your browser and navigate to: http://10.93.25.191:3000/
+- Select topics in the sidebar and click **Find News**
+- Click **Generate Today's Digest** to fetch an AI-written summary
+- Browse individual articles and click 🔖 to bookmark them
+
+### 🔒 Security & Maintenance
+
+- **Secrets:** `.env.secret` is in `.gitignore` and never pushed to GitHub
+- **Updates:** `git pull && docker compose --env-file .env.secret up -d --build`
+- **Stop:** `docker compose down`
+- **Wipe Data:** `docker compose down -v` (removes the PostgreSQL volume)
+
+### 🛠 Troubleshooting
+
+| Issue | Fix |
+|---|---|
+| `getaddrinfo EAI_AGAIN` / DNS errors | Apply Step 3 (Docker DNS config) and restart Docker |
+| "No articles found" on UI | Check `docker compose logs backend`. If NewsAPI is blocked, leave `NEWS_API_KEY` empty to test mock mode |
+| Digest shows template instead of AI summary | Verify `LLM_BASE_URL` is reachable. Leave `LLM_API_KEY` empty to intentionally use template fallback |
+| Port 3000/8000 unreachable | Run `sudo ufw allow 3000,8000/tcp` and check cloud provider security groups |
+| Backend container unhealthy | Run `docker compose logs backend` to check for migration or connection errors |
