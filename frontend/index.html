@@ -39,12 +39,14 @@
   .header-top {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center; position: relative;
     padding: 1rem 0 0.5rem;
     border-bottom: 1px solid var(--border);
   }
 
   .date-line {
+    position: absolute;
+    left: 2rem;
     font-size: 0.7rem;
     letter-spacing: 0.15em;
     text-transform: uppercase;
@@ -61,6 +63,21 @@
   }
 
   .masthead span { color: var(--accent); }
+
+  .header-quote {
+    position: absolute;
+    right: 2rem;
+    font-size: 0.62rem;
+    color: var(--muted);
+    text-align: right;
+    max-width: 260px;
+    line-height: 1.4;
+    font-style: italic;
+  }
+  .header-quote em {
+    font-style: italic;
+    font-weight: 500;
+  }
 
   .header-actions {
     display: flex;
@@ -156,7 +173,7 @@
     color: var(--muted);
     letter-spacing: 0.05em;
     display: flex;
-    justify-content: space-between;
+    justify-content: center; position: relative;
     align-items: center;
   }
 
@@ -255,7 +272,7 @@
 
   .article-footer {
     display: flex;
-    justify-content: space-between;
+    justify-content: center; position: relative;
     align-items: center;
     margin-top: 0.75rem;
     padding-top: 0.75rem;
@@ -327,14 +344,14 @@
     text-transform: uppercase;
     font-weight: 500;
     border: 1.5px solid var(--ink);
-    background: transparent;
-    color: var(--ink);
+    background: var(--ink);
+    color: var(--paper);
     cursor: pointer;
     transition: all 0.15s;
     font-family: 'DM Sans', sans-serif;
   }
 
-  .save-prefs-btn:hover { background: var(--ink); color: var(--paper); }
+  .save-prefs-btn:hover { background: var(--accent); color: white; }
 
   /* HISTORY */
   .history-item {
@@ -474,9 +491,8 @@
   <div class="header-top">
     <span class="date-line" id="date-display"></span>
     <div class="masthead">Briefed<span>.</span></div>
-    <div class="header-actions">
-      <button class="btn" onclick="showTab('bookmarks-tab')">📑 Saved</button>
-      <button class="btn" onclick="showTab('history-tab')">🕒 History</button>
+    <div class="header-quote">
+      &ldquo;Information flow is what the Internet is about. Information sharing is power&rdquo; &mdash; Vinton <em>Surf</em>
     </div>
   </div>
 </header>
@@ -698,14 +714,14 @@ function renderArticles(arts) {
       ${a.url_to_image ? `<img class="article-img" src="${a.url_to_image}" alt="" onerror="this.style.display='none'">` : ''}
       <div class="article-body">
         <div class="article-topic">${TOPIC_ICONS[a.topic]||'📌'} ${a.topic||'News'}</div>
-        <div class="article-title">${escHtml(a.title)}</div>
+        <div class="article-title">${escHtml(cleanTitle(a.title))}</div>
         ${a.description ? `<div class="article-desc">${escHtml(a.description)}</div>` : ''}
         <div class="article-footer">
           <span class="article-source">${a.source_name||'Unknown'}</span>
           <button class="bookmark-btn ${bookmarkedIds.has(a.id)?'active':''}"
             onclick="event.stopPropagation();toggleBookmark('${a.id}',this)"
             title="Save article">
-            ${bookmarkedIds.has(a.id) ? '🔖' : '🔖'}
+            🔖
           </button>
         </div>
       </div>
@@ -806,6 +822,11 @@ function toast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function cleanTitle(title) {
+  // Remove source name from title (e.g. " - Financial Times", " - SpaceNews", " - startribune.com")
+  return title.replace(/\s+[-–—]\s*([A-Z][a-z]+\s+)?(News|Times|Tribune|Central|Authority|Gear|MacRumors|Glam\.com|PBS|CBS News|SpaceNews|Financial Times|The Daily Galaxy|The Verge|Tech Crunch|ESPN|Variety|Nature|The Lancet|Windows Central|SlashGear|Android Authority|startribune\.com)\s*$/i, '');
 }
 
 function escHtml(str) {
