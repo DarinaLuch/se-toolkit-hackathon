@@ -3,8 +3,8 @@
 > Get a daily personalized news summary on topics you care about, explained simply by AI.
 
 ## Demo
-
-![Digest view](https://picsum.photos/seed/briefed1/800/400)
+<img width="1917" height="1042" alt="1" src="https://github.com/user-attachments/assets/a714ace5-3a4a-474c-9038-dec53afa4f5b" />
+<img width="1916" height="1038" alt="2" src="https://github.com/user-attachments/assets/19176abc-2875-488a-b876-c52f3abe3b12" />
 
 ## Product Context
 
