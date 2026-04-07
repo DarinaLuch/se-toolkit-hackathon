@@ -129,8 +129,6 @@ def _template_digest(articles: List[Dict[str, Any]], topics: List[str]) -> str:
                 clean = content.replace("[+...]", "").replace("[...]", "").strip()
                 if clean:
                     lines.append(clean[:400] + "..." if len(clean) > 400 else clean)
-            if source_name:
-                lines.append(f"*(via {source_name})*")
             lines.append("")
 
     if not lines:
