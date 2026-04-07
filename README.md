@@ -5,7 +5,6 @@
 ## Demo
 
 ![Digest view](https://picsum.photos/seed/briefed1/800/400)
-![Articles view](https://picsum.photos/seed/briefed2/800/400)
 
 ## Product Context
 
