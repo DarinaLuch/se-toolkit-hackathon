@@ -3,9 +3,9 @@ import os
 import json
 from typing import List, Dict, Any
 
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "anthropic")  # anthropic | openai | qwen
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "anthropic")
 LLM_API_KEY = os.getenv("LLM_API_KEY", "")
-LLM_BASE_URL = os.getenv("LLM_BASE_URL", "")  # for qwen proxy
+LLM_BASE_URL = os.getenv("LLM_BASE_URL", "")
 LLM_MODEL = os.getenv("LLM_MODEL", "claude-sonnet-4-20250514")
 
 
@@ -13,22 +13,32 @@ def _build_prompt(articles: List[Dict[str, Any]], topics: List[str]) -> str:
     topic_str = ", ".join(topics)
     articles_text = ""
     for i, a in enumerate(articles[:15], 1):
-        articles_text += f"\n[{i}] {a.get('title', 'No title')}\n"
-        if a.get("description"):
-            articles_text += f"    {a['description']}\n"
-        articles_text += f"    Source: {a.get('source', {}).get('name', 'Unknown') if isinstance(a.get('source'), dict) else a.get('source_name', 'Unknown')}\n"
+        title = a.get('title', 'No title')
+        desc = a.get('description', '')
+        content = a.get('content', '') or a.get('content_full', '')
+        if content and len(content) > 500:
+            content = content[:500] + '...'
+        articles_text += f"\n[{i}] {title}"
+        if desc:
+            articles_text += f"\n    Summary: {desc}"
+        if content:
+            articles_text += f"\n    Details: {content}"
+        source = a.get('source', {})
+        source_name = source.get('name', '') if isinstance(source, dict) else a.get('source_name', 'Unknown')
+        articles_text += f"\n    Source: {source_name}\n"
 
-    return f"""You are a news digest assistant. The user is interested in: {topic_str}.
+    return f"""You are a professional news editor writing a daily digest. The user is interested in: {topic_str}.
 
-Here are today's top articles:
+Here are today's articles with their summaries and details:
 {articles_text}
 
-Write a clear, engaging daily news digest. For each topic that has articles:
-1. Write a short section header (e.g. "🔬 Science")
-2. Write 2-3 sentences summarizing the key story
-3. Mention the source
+Write a clear, engaging daily news digest that reads like a newsletter, NOT a list of headlines. For each topic:
+1. Start with a section header (e.g. "🔬 Science")
+2. Write 2-3 SENTENCES that synthesize the KEY POINTS — explain what happened, why it matters, and any important details
+3. Do NOT just repeat headlines — write actual summary paragraphs a person would enjoy reading
+4. Mention the source in parentheses at the end
 
-Keep it conversational, informative, and under 400 words total. End with one sentence: "That's your digest for today!"
+Keep it conversational, informative, and under 400 words total. End with: "That's your digest for today!"
 
 Do NOT add any preamble like "Here is your digest". Just start with the first section."""
 
@@ -37,14 +47,16 @@ async def summarize_articles(articles: List[Dict[str, Any]], topics: List[str]) 
     prompt = _build_prompt(articles, topics)
 
     if not LLM_API_KEY and not LLM_BASE_URL:
-        # Fallback: simple template-based digest
         return _template_digest(articles, topics)
 
-    if LLM_PROVIDER == "anthropic":
-        return await _call_anthropic(prompt)
-    else:
-        # OpenAI-compatible (openai or qwen proxy)
-        return await _call_openai_compatible(prompt)
+    try:
+        if LLM_PROVIDER == "anthropic":
+            return await _call_anthropic(prompt)
+        else:
+            return await _call_openai_compatible(prompt)
+    except Exception as e:
+        print(f"LLM call failed, using template fallback: {e}")
+        return _template_digest(articles, topics)
 
 
 async def _call_anthropic(prompt: str) -> str:
@@ -61,7 +73,7 @@ async def _call_anthropic(prompt: str) -> str:
                 "max_tokens": 1024,
                 "messages": [{"role": "user", "content": prompt}],
             },
-            timeout=30,
+            timeout=10,
         )
         data = response.json()
         return data["content"][0]["text"]
@@ -70,7 +82,6 @@ async def _call_anthropic(prompt: str) -> str:
 async def _call_openai_compatible(prompt: str) -> str:
     base_url = LLM_BASE_URL or "https://api.openai.com/v1"
     model = LLM_MODEL if LLM_PROVIDER != "openai" else "gpt-4o-mini"
-
     async with httpx.AsyncClient() as client:
         response = await client.post(
             f"{base_url}/chat/completions",
@@ -83,15 +94,15 @@ async def _call_openai_compatible(prompt: str) -> str:
                 "max_tokens": 1024,
                 "messages": [{"role": "user", "content": prompt}],
             },
-            timeout=30,
+            timeout=10,
         )
         data = response.json()
         return data["choices"][0]["message"]["content"]
 
 
 def _template_digest(articles: List[Dict[str, Any]], topics: List[str]) -> str:
-    """Fallback digest when no LLM key is configured."""
-    lines = ["📰 **Your News Digest**\n"]
+    """Template-based digest — shows all articles with full descriptions/content."""
+    lines: List[str] = []
     by_topic: Dict[str, list] = {}
     for a in articles:
         t = a.get("topic", "General")
@@ -103,11 +114,27 @@ def _template_digest(articles: List[Dict[str, Any]], topics: List[str]) -> str:
     for topic, arts in by_topic.items():
         icon = icons.get(topic.lower(), "📌")
         lines.append(f"\n{icon} **{topic.title()}**")
-        for a in arts[:2]:
+        lines.append("")
+        for a in arts[:3]:
             title = a.get("title", "")
+            desc = a.get("description", "")
+            content = a.get("content", "") or a.get("content_full", "")
             source = a.get("source", {})
             source_name = source.get("name", "") if isinstance(source, dict) else a.get("source_name", "")
-            lines.append(f"• {title} *(via {source_name})*")
 
-    lines.append("\nThat's your digest for today!")
+            lines.append(f"**{title}**")
+            if desc:
+                lines.append(desc)
+            elif content:
+                clean = content.replace("[+...]", "").replace("[...]", "").strip()
+                if clean:
+                    lines.append(clean[:400] + "..." if len(clean) > 400 else clean)
+            if source_name:
+                lines.append(f"*(via {source_name})*")
+            lines.append("")
+
+    if not lines:
+        return "📰 No articles found for your selected topics. Try different topics or check back later!"
+
+    lines.append("—\nThat's your digest for today!")
     return "\n".join(lines)

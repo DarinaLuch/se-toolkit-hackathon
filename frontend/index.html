@@ -9,7 +9,7 @@
 <style>
   :root {
     --ink: #0f0e0d;
-    --paper: #f5f0e8;
+    --paper: #f5f5f3;
     --cream: #ede8dd;
     --accent: #c8372d;
     --muted: #7a7268;
@@ -84,34 +84,6 @@
   .btn:hover { background: var(--ink); color: var(--paper); }
   .btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
   .btn.primary:hover { background: #a52d24; border-color: #a52d24; }
-
-  .nav-bar {
-    display: flex;
-    gap: 0;
-    padding: 0.4rem 0;
-    overflow-x: auto;
-  }
-
-  .topic-pill {
-    padding: 0.25rem 0.9rem;
-    font-size: 0.7rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    font-weight: 500;
-    border: none;
-    background: transparent;
-    color: var(--muted);
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: all 0.15s;
-    white-space: nowrap;
-    font-family: 'DM Sans', sans-serif;
-  }
-
-  .topic-pill.active {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
-  }
 
   /* MAIN LAYOUT */
   .layout {
@@ -507,7 +479,6 @@
       <button class="btn" onclick="showTab('history-tab')">🕒 History</button>
     </div>
   </div>
-  <div class="nav-bar" id="topic-nav"></div>
 </header>
 
 <div class="layout">
@@ -549,7 +520,7 @@
     <div id="panel-prefs">
       <div class="section-label">Your Topics</div>
       <div class="topics-grid" id="topics-grid"></div>
-      <button class="save-prefs-btn" onclick="savePreferences()">Save & Refresh</button>
+      <button class="save-prefs-btn" onclick="savePreferences()">Find News</button>
     </div>
 
     <!-- HISTORY -->
@@ -595,20 +566,12 @@ window.onload = async () => {
   document.getElementById('date-display').textContent =
     new Date().toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
 
-  renderTopicNav();
   await loadPreferences();
   renderTopicsGrid();
   loadHistory();
   loadBookmarks();
   loadArticles();
 };
-
-function renderTopicNav() {
-  const nav = document.getElementById('topic-nav');
-  nav.innerHTML = ALL_TOPICS.map(t =>
-    `<button class="topic-pill" onclick="filterByTopic('${t}')">${TOPIC_ICONS[t]} ${t}</button>`
-  ).join('');
-}
 
 async function loadPreferences() {
   try {
@@ -667,7 +630,7 @@ async function generateDigest() {
     const r = await fetch(`${API}/api/news/digest?session_id=${SESSION_ID}`);
     const data = await r.json();
 
-    box.textContent = data.summary;
+    box.innerHTML = renderMarkdown(data.summary);
     box.style.color = 'var(--ink)';
     box.style.fontFamily = "'Playfair Display', serif";
     box.style.fontStyle = 'normal';
@@ -750,13 +713,6 @@ function renderArticles(arts) {
   `).join('');
 }
 
-function filterByTopic(topic) {
-  document.querySelectorAll('.topic-pill').forEach(p => p.classList.remove('active'));
-  event.target.classList.add('active');
-  const filtered = topic ? articles.filter(a => a.topic === topic) : articles;
-  renderArticles(filtered);
-}
-
 function openArticle(url) { window.open(url, '_blank'); }
 
 async function toggleBookmark(articleId, btn) {
@@ -798,7 +754,7 @@ async function loadHistory() {
 
 function showDigest(summary) {
   const box = document.getElementById('digest-text');
-  box.textContent = summary;
+  box.innerHTML = renderMarkdown(summary);
   box.style.color = 'var(--ink)';
   box.style.fontFamily = "'Playfair Display', serif";
   box.style.fontStyle = 'normal';
@@ -854,6 +810,21 @@ function toast(msg) {
 
 function escHtml(str) {
   return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderMarkdown(text) {
+  if (!text) return '';
+  // Escape HTML first for safety
+  let html = escHtml(text);
+  // **bold**
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // *italic*
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // em dash
+  html = html.replace(/—/g, '\u2014');
+  // Line breaks
+  html = html.replace(/\n/g, '<br>');
+  return html;
 }
 </script>
 </body>

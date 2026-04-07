@@ -52,15 +52,16 @@
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/YOUR_USERNAME/se-toolkit-hackathon
+git clone https://github.com/DarinaLuch/se-toolkit-hackathon
 cd se-toolkit-hackathon
 
-# 2. Create your env file
+# 2. Create your env file (copy from example)
+# .env.secret is NOT committed to git — fill in your real keys there
 cp .env.example .env.secret
 
 # 3. Fill in your keys
 nano .env.secret
-# Set NEWS_API_KEY, LLM_PROVIDER, LLM_API_KEY, etc.
+# Set NEWS_API_KEY, LLM_API_KEY, etc.
 
 # 4. Build and start
 docker compose --env-file .env.secret up --build -d
